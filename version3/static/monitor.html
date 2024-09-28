@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VM Monitoring</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .metric {
+            background-color: #f4f4f4;
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
+        }
+        .metric h2 {
+            margin: 0;
+        }
+        .metric p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Compute Monitoring</h1>
+        <div id="metrics-container"></div>
+    </div>
+
+    <script>
+        // Function to convert bytes to GB
+        function bytesToGB(bytes) {
+            return (bytes / 1073741824).toFixed(2); // 1024^3 = 1073741824
+        }
+
+        // Function to fetch metrics and update the page
+        function fetchMetrics() {
+            fetch('/monitor/monitor')
+                .then(response => response.json())
+                .then(data => {
+                    const metrics = data.metrics.value;
+                    const container = document.getElementById('metrics-container');
+                    
+                    // Clear previous content
+                    container.innerHTML = '';
+
+                    // Loop through each metric and display them
+                    metrics.forEach(metric => {
+                        const metricDiv = document.createElement('div');
+                        metricDiv.classList.add('metric');
+
+                        // Check if the unit is Bytes to apply conversion
+                        let averageValue = metric.timeseries[0].data[0].average;
+                        let displayUnit = metric.unit;
+                        
+                        if (metric.unit === 'Bytes') {
+                            averageValue = bytesToGB(averageValue);
+                            displayUnit = 'GB';
+                        }
+
+                        metricDiv.innerHTML = `
+                            <h2>${metric.name.localizedValue}</h2>
+                            <p><strong>Description:</strong> ${metric.displayDescription}</p>
+                            <p><strong>Average Value:</strong> ${averageValue} ${displayUnit}</p>
+                            <p><strong>Timestamp:</strong> ${metric.timeseries[0].data[0].timeStamp}</p>
+                        `;
+
+                        container.appendChild(metricDiv);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching metrics:', error);
+                });
+        }
+
+        // Fetch metrics immediately when the page loads
+        fetchMetrics();
+
+        // Set an interval to refresh the metrics every 20 seconds (20000 milliseconds)
+        setInterval(fetchMetrics, 20000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+Version 1 Overview:
+In Version 1 of our project, we streamlined the provisioning process by creating a REST API that interfaces with a Terraform configuration file, which was initially set up with hardcoded values but later enhanced to accept dynamic inputs through JSON payloads. The API includes the following endpoints:
+
+POST: http://localhost:5000/api/provision: This endpoint provisions Azure resources such as Virtual Machines, Azure Kubernetes clusters, and Databricks clusters. It accepts a JSON payload containing the necessary configuration details, processes the input, and triggers the corresponding Terraform scripts to create the specified resources in Azure.
+
+POST: http://localhost:5000/api/decommission: This endpoint deletes existing Azure resources that were previously provisioned. It requires a JSON payload specifying the resource identifiers (like resource group or VM name) and triggers the necessary Terraform commands to remove the specified resources from Azure.
+This version focused on exploring the manual process of provisioning Azure resources, specifically Virtual Machines, Azure Kubernetes clusters, and Databricks clusters. The purpose was to understand the parameters and inputs required to provision these resources using Terraform.
+
+Initial Phase: Manual Testing and Exploration
+Before automating the process with Terraform, we manually provisioned the resources on Azure. This step allowed us to identify the key input values necessary to configure a Virtual Machine, Azure Kubernetes cluster, and Databricks cluster. The goal was to familiarize ourselves with Azure's resource creation process and ensure that these configurations could be successfully replicated through Terraform.
+
+Testing with Hardcoded Terraform Configurations
+After understanding the required input parameters, we created a Terraform file with hardcoded values. We then integrated this Terraform configuration with our API, allowing us to test the provisioning process by sending payloads via Postman to retrieve results. The API was structured to accept HTTP requests and respond with resource provisioning statuses or errors, providing an interface for automating Azure infrastructure setup.
+
+Transition to Dynamic Input Handling
+Once we obtained the necessary Azure credentials, we enhanced the Terraform file to accept dynamic inputs. Instead of using hardcoded values, the API was modified to accept parameters from client requests and pass them as variables to the Terraform file. This allowed us to dynamically create Azure resources through API calls based on user-provided input data.
+
+Rollback Implementation
+We also implemented a rollback mechanism to enhance reliability. Whenever resource creation encountered an error, any successfully created resources associated with that process were automatically deleted. This ensured that the infrastructure remained consistent and did not leave orphaned resources.
+
+API Payload Structure for Azure Resource Provisioning
+To demonstrate the functionality, the following JSON payload was used in API requests to provision Azure resources dynamically:
+
+
+Virtual Machine Json:
+{
+  "virtual_machine": {
+    "rgname": "Hackathon_Devops2",
+    "vm": "vmautomation",
+    "vmsize": "Standard_D2s_v3",
+    "admin_username": "linuxusr"
+  }
+}
+-rgname: Resource group name for organizing Azure resources.
+-vm: Name of the virtual machine being created.
+-vmsize: Size of the virtual machine, specifying its compute resources.
+-admin_username: Username for the VM's.
+AKS Json:
+{
+    "aks": {
+        "resource_group_name": "Hackathon_Devops5",
+        "acr_name": "acr",
+        "acr_sku": "Basic",
+        "cluster_name": "aks",
+        "kubernetes_version": "1.29.2",
+        "dns_prefix": "myaksdns",
+        "node_resource_group": "nrg",
+        "node_pools": [
+            {
+                "name": "default",
+                "os_sku": "Ubuntu",
+                "node_count": 2,
+                "vm_size": "Standard_DS2_v2"
+            }
+        ],
+        "network_plugin": "azure",
+        "network_policy": "azure",
+        "service_cidr": "10.0.0.0/16",
+        "dns_service_ip": "10.0.0.10"
+    }
+}
+-resource_group_name: Name of the resource group for the AKS cluster.
+-acr_name: Name of the Azure Container Registry to be used.
+-acr_sku: SKU tier for the Azure Container Registry.
+-cluster_name: Name of the Azure Kubernetes Service (AKS) cluster.
+-kubernetes_version: Version of Kubernetes to be deployed.
+-dns_prefix: Prefix for the DNS name of the AKS cluster.
+-node_resource_group: Name of the resource group for the AKS node resources.
+-node_pools: Configuration for node pools, including:
+-name: Name of the node pool.
+-os_sku: Operating system SKU for the nodes.
+-node_count: Number of nodes in the pool.
+-vm_size: Size of the virtual machines in the node pool.
+-network_plugin: Network plugin to be used for the AKS cluster.
+-network_policy: Network policy for controlling traffic between pods.
+-service_cidr: CIDR block for the services in the AKS cluster.
+-dns_service_ip: IP address for the DNS service in the AKS cluster.
+
+Databricks Json:
+{
+  "databricks": {
+    "resource_group_name": "Hackathon_Devops2",
+    "location": "East US",
+    "databricks_workspace_name": "workspace-through-automation",
+    "databricks_sku": "standard",
+    "databricks_clusters": {
+      "cluster1": {
+        "cluster_name": "databricks-cluster-1",
+        "spark_version": "9.1.x-scala2.12",
+        "node_type": "Standard_DS3_v2",
+        "min_workers": 1,
+        "max_workers": 2
+      }
+    },
+    "enable_secure_cluster_connectivity": false,
+    "enable_vnet_deployment": false,
+    "vnet_id": "",
+    "enable_customer_managed_key": false
+  }
+}
+-resource_group_name: Name of the resource group for the Databricks workspace.
+-location: Azure region where the Databricks workspace is deployed.
+-databricks_workspace_name: Name of the Databricks workspace.
+-databricks_sku: SKU tier for the Databricks workspace.
+-databricks_clusters: Configuration for Databricks clusters, including:
+-cluster1: Details of the first cluster with:
+-cluster_name: Name of the Databricks cluster.
+-spark_version: Version of Spark to be used.
+-node_type: Type of virtual machine for the cluster nodes.
+-min_workers: Minimum number of worker nodes in the cluster.
+-max_workers: Maximum number of worker nodes in the cluster.
+-enable_secure_cluster_connectivity: Flag to enable secure connectivity for the cluster.
+-enable_vnet_deployment: Flag to enable deployment within a virtual network (VNet).
+-vnet_id: ID of the virtual network (if applicable).
+-enable_customer_managed_key: Flag to enable the use of a customer-managed key for encryption.
+
+ Workflow Overview
+1 API Request: The client sends an HTTP POST request to the endpoint with the required input containing network configuration details.
+2 Input Parsing: The Flask application processes the incoming request to extract the configuration parameters.
+3 Terraform Execution: The application invokes Terraform scripts to provision the Azure infrastructure, which includes creating the Virtual Network, Network Security Group, and Subnet using the parsed inputs.
+4 Response: The API returns the status of the operation, indicating whether it was successful or failed, along with relevant output such as resource IDs or error messages.
+This approach enables automated Azure resource creation through a Flask API interface, minimizing manual intervention and enhancing the efficiency and scalability of infrastructure provisioning.
+
+How to Run the Application and Create Azure Resources
+Set Up Your Environment:
+
+Ensure you have Python installed on your system.
+Install the necessary dependencies by running:
+pip install -r requirements.txt
+
+Run the Flask Application:
+Open a terminal or command prompt.
+Navigate to the project directory where app.py is located.
+Run the following command to start the server:
+python app.py
+
+The server should start and typically will be accessible at http://localhost:5000.
+Open Postman:
+
+Launch the Postman application.
+Enter the Provision Endpoint:
+
+In Postman, set the request type to POST.
+Enter the following URL in the request field:
+http://localhost:5000/api/provision
+Enter JSON Payload:
+
+In the Postman interface, go to the Body tab.
+Select raw and then choose JSON from the dropdown menu.
+Enter the JSON payload that contains the required configuration for the Azure resources. For example:
+json
+Copy code
+{
+  "resource_group_name": "Hackathon_Devops5",
+  "vm": "vmautomation",
+  "vmsize": "Standard_D2s_v3",
+  "admin_username": "linuxusr"
+}
+Send the Request:
+
+Click the Send button.
+The server will process the request and initiate the provisioning of the Azure resources using the provided configuration.
+Check the Response:
+
+Observe the response returned by the API in Postman. It will indicate whether the provisioning was successful or if there were any errors.
+Verify Resource Creation in Azure Portal:
+
+Log in to the Azure Portal.
+Navigate to the resource group you specified in the JSON payload.
+Verify that the resources have been successfully created.

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Provision Compute</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+        .btn-monitor {
+            color: #fff;
+            background-color: #6c757d;
+        }
+
+        .btn-monitor.active {
+            background-color: #28a745;
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 5px;
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h2>Provision Compute</h2>
+        <form onsubmit="submitForm(event)">
+            <div class="form-group">
+                <label for="rgname">Resource Group Name:</label>
+                <input type="text" class="form-control" id="rgname" placeholder="Enter Resource Group Name" required>
+            </div>
+            <div class="form-group">
+                <label for="vm">Virtual Machine Name:</label>
+                <input type="text" class="form-control" id="vm" placeholder="Enter Virtual Machine Name" required>
+            </div>
+            <div class="form-group">
+                <label for="vmsize">VM Size:</label>
+                <select class="form-control" id="vmsize" required>
+                    <option value="">Select VM Size</option>
+                    <option value="Standard_D2s_v3">Standard_D2s_v3</option>
+                    <option value="Standard_D4s_v3">Standard_D4s_v3</option>
+                    <option value="Standard_D8s_v3">Standard_D8s_v3</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="admin_username">Admin Username:</label>
+                <input type="text" class="form-control" id="admin_username" placeholder="Enter Admin Username" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+            <button type="button" id="destroyButton" class="btn btn-secondary" onclick="destroyResources()">Destroy</button>
+            <button type="button" id="monitorButton" class="btn btn-monitor" onclick="monitorResources()" disabled>Monitor</button>
+            <button type="button" id="predictButton" class="btn btn-info" onclick="predictResources()" disabled>Predict</button>
+            <button type="button" id="downloadButton" class="btn btn-success" onclick="downloadPemFile()" style="display: none;">Download PEM File</button>
+        </form>
+        <div class="loading" id="loading">Loading...</div>
+        <div id="statusMessage"></div>
+    </div>
+
+    <script>
+        let provisioningSuccess = false;
+
+        window.onload = function () {
+            document.getElementById('rgname').value = localStorage.getItem('rgname') || '';
+            document.getElementById('vm').value = localStorage.getItem('vm') || '';
+            document.getElementById('vmsize').value = localStorage.getItem('vmsize') || '';
+            document.getElementById('admin_username').value = localStorage.getItem('admin_username') || '';
+        };
+
+        function validateForm() {
+            const rgname = document.getElementById('rgname').value;
+            const vm = document.getElementById('vm').value;
+            const vmsize = document.getElementById('vmsize').value;
+            const adminUsername = document.getElementById('admin_username').value;
+
+            if (!rgname || !vm || !vmsize || !adminUsername) {
+                alert('All fields are required.');
+                return false;
+            }
+
+            const validVMSizes = ["Standard_D2s_v3", "Standard_D4s_v3", "Standard_D8s_v3"];
+            if (!validVMSizes.includes(vmsize)) {
+                alert('Invalid VM size. Please select a valid size.');
+                return false;
+            }
+
+            return true;
+        }
+
+        function submitForm(event) {
+            event.preventDefault();
+
+            if (!validateForm()) return;
+
+            localStorage.setItem('rgname', document.getElementById('rgname').value);
+            localStorage.setItem('vm', document.getElementById('vm').value);
+            localStorage.setItem('vmsize', document.getElementById('vmsize').value);
+            localStorage.setItem('admin_username', document.getElementById('admin_username').value);
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('statusMessage').innerText = '';
+
+            const formData = {
+                virtual_machine: {
+                    rgname: document.getElementById('rgname').value,
+                    vm: document.getElementById('vm').value,
+                    vmsize: document.getElementById('vmsize').value,
+                    admin_username: document.getElementById('admin_username').value
+                }
+            };
+
+            fetch('/api/provision', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('loading').style.display = 'none';
+
+                    if (data.status === 'success') {
+                        alert('Provisioning successful: ' + data.message);
+                        provisioningSuccess = true;
+                        document.getElementById('destroyButton').classList.remove('btn-secondary');
+                        document.getElementById('destroyButton').classList.add('btn-danger');
+                        document.getElementById('statusMessage').innerText = 'Provisioning successful!';
+                        document.getElementById('statusMessage').classList.add('text-success');
+                        document.getElementById('statusMessage').classList.remove('text-danger');
+                        document.getElementById('monitorButton').classList.remove('btn-monitor');
+                        document.getElementById('monitorButton').classList.add('btn-monitor', 'active');
+                        document.getElementById('monitorButton').disabled = false;
+                        document.getElementById('predictButton').disabled = false;
+                        document.getElementById('downloadButton').style.display = 'inline-block';
+                    } else {
+                        alert('Provisioning failed: ' + data.message);
+                        document.getElementById('statusMessage').innerText = 'Provisioning failed. Rollback performed.';
+                        document.getElementById('statusMessage').classList.add('text-danger');
+                        document.getElementById('statusMessage').classList.remove('text-success');
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('loading').style.display = 'none';
+                    alert('Error: ' + error);
+                    document.getElementById('statusMessage').innerText = 'Provisioning failed.';
+                    document.getElementById('statusMessage').classList.add('text-danger');
+                    document.getElementById('statusMessage').classList.remove('text-success');
+                });
+        }
+
+        function destroyResources() {
+            if (!provisioningSuccess) {
+                alert('Provisioning must be successful before you can destroy resources.');
+                return;
+            }
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('statusMessage').innerText = 'Destroying resources...';
+
+            fetch('/api/decommission', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('loading').style.display = 'none';
+
+                    alert('Destroy complete: ' + data.message);
+                    provisioningSuccess = false;
+                    document.getElementById('destroyButton').classList.remove('btn-danger');
+                    document.getElementById('destroyButton').classList.add('btn-secondary');
+                    document.getElementById('statusMessage').innerText = '';
+                    document.getElementById('downloadButton').style.display = 'none';
+                })
+                .catch(error => {
+                    document.getElementById('loading').style.display = 'none';
+                    alert('Error: ' + error);
+                });
+        }
+
+        function monitorResources() {
+            if (!provisioningSuccess) {
+                alert('Provisioning must be successful before you can monitor resources.');
+                return;
+            }
+            window.location.href = "/monitor";
+        }
+
+        function predictResources() {
+            if (!provisioningSuccess) {
+                alert('Provisioning must be successful before you can predict resources.');
+                return;
+            }
+            window.location.href = "/predict";
+        }
+
+        function downloadPemFile() {
+            fetch('/api/download-pem')
+                .then(response => {
+                    if (response.ok) {
+                        return response.blob();
+                    }
+                    throw new Error('Network response was not ok.');
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'linuxkey.pem';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    console.error('Error downloading PEM file:', error);
+                    alert('Error downloading PEM file. Please try again.');
+                });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,28 @@
+Version 2 Overview:
+In Version 2 of our project, we developed a user interface for managing virtual machines, enhancing user interaction with four key buttons: Submit, Destroy, Monitor, and Download PEM.
+
+Submit Button: Automates the provisioning of a virtual machine in Azure.
+Destroy Button: Deletes the specified virtual machine resource.
+Monitor Button: Opens a new page that displays real-time metrics for the virtual machine. After clicking this button, wait a moment for the metrics to be fetched.
+Download PEM Button: Facilitates the download of the secret key in PEM format.
+Additionally, we implemented the endpoint http://localhost:5000/monitor, which continuously retrieves metrics from the Azure REST API at the following URL:
+
+perl
+Copy code
+https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachines/{VM_name}/providers/microsoft.insights/metrics?api-version=2018-01-01&metricnames=Percentage%20CPU,Available%20Memory%20Bytes,Network%20In%20Total,Network%20Out%20Total&timespan=PT1H&aggregation=Average&interval=PT1H
+This endpoint fetches metrics such as CPU usage, available memory, and network activity.
+
+To ensure seamless access to the metrics API, we implemented an automatic token generation mechanism using the following endpoint for acquiring the access token:
+
+bash
+Copy code
+https://login.microsoftonline.com/{subscriptionId}/oauth2/v2.0/token
+Whenever the token expires, a new token is generated automatically to maintain continuous access.
+
+We introduced two static HTML files:
+
+index.html: Serves as the home page for user input.
+monitor.html: Displays the fetched metrics on-screen, updating every 20 seconds.
+Finally, we added the functionality to download the PEM file via the Download PEM button.
+
+With these enhancements, users can easily manage virtual machines, monitor their performance, and download necessary credentials, all from a streamlined interface.

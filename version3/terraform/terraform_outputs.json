@@ -1,0 +1,32 @@
+{
+  "admin_username": {
+    "sensitive": false,
+    "type": "string",
+    "value": "nithin"
+  },
+  "linux_pem_key": {
+    "sensitive": true,
+    "type": "string",
+    "value": "-----BEGIN RSA PRIVATE KEY-----\n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\n-----END RSA PRIVATE KEY-----\n"
+  },
+  "resource_group": {
+    "sensitive": false,
+    "type": "string",
+    "value": "Hackathon_Devops5"
+  },
+  "vm_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "/subscriptions/e38e4eed-8fbd-4713-b27d-0f419989008a/resourceGroups/Hackathon_Devops5/providers/Microsoft.Compute/virtualMachines/llmvmtest"
+  },
+  "vm_name": {
+    "sensitive": false,
+    "type": "string",
+    "value": "llmvmtest"
+  },
+  "vm_public_ip": {
+    "sensitive": false,
+    "type": "string",
+    "value": "40.76.46.110"
+  }
+}
