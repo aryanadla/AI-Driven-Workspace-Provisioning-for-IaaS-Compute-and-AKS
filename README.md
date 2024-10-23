@@ -40,3 +40,12 @@ Fork the repository.
 Create a new branch (git checkout -b feature-branch).
 Make your changes and run the tests.
 Submit a pull request.
+
+![01](https://github.com/user-attachments/assets/7989476a-b972-4ba1-9164-784ef268e4c4)
+
+![02](https://github.com/user-attachments/assets/698be30e-f812-4100-bc1f-63672c147e08)
+
+![03](https://github.com/user-attachments/assets/9a2bd81c-f74d-46c4-98f9-e4974039f6a0)
+
+![04](https://github.com/user-attachments/assets/89c72ac1-3a3b-4b13-92c1-5ea5237b2bb3)
+
